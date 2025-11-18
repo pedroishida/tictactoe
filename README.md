@@ -1,4 +1,5 @@
-#Tic-Tac-Toe
+Tic-Tac-Toe
+===========
 
 Simple game of Tic-Tac-Toe in the terminal against the computer.
 
