@@ -13,6 +13,8 @@
 #define E_OCCUPIED_TILE -2
 #define E_OUT_OF_BOUNDS -3
 
+#define BOARD_LENGTH 3
+
 class Move
 {
     public:
@@ -25,12 +27,13 @@ class Move
 class Board
 {
     private:
-        char boardPos[3][3];
+        char boardPos[BOARD_LENGTH][BOARD_LENGTH];
         const char pieces[2] = {'X', 'O'};
         std::vector<Move> moves;
 
     public:
         int player;
+        int length;
         void print();
         int makeMove(const Move &);
         int unmakeMove(const Move &);
@@ -56,10 +59,11 @@ class Engine
 
 Board::Board()
 {
+    length = BOARD_LENGTH;
     player = 0;
-    for(size_t i = 0; i < 3; i++)
+    for(int i = 0; i < length; i++)
     {
-        for(size_t j = 0; j < 3; j++)
+        for(int j = 0; j < length; j++)
         {
             boardPos[i][j] = ' ';
         }
@@ -68,10 +72,11 @@ Board::Board()
 
 Board & Board::operator=(const Board &other)
 {
+    length = other.length;
     player = other.player;
-    for(size_t i = 0; i < 3; i++)
+    for(int i = 0; i < length; i++)
     {
-        for(size_t j = 0; j < 3; j++)
+        for(int j = 0; j < length; j++)
         {
             boardPos[i][j] = other.boardPos[i][j];
         }
@@ -98,13 +103,27 @@ Board::Board(Board &&other) noexcept
 }
 void Board::print()
 {
-
-    std::cout << "3  " << boardPos[2][0] << " | " << boardPos[2][1] << " | " << boardPos[2][2] << " " << std::endl;
-    std::cout << "  -----------" << std::endl;
-    std::cout << "2  " << boardPos[1][0] << " | " << boardPos[1][1] << " | " << boardPos[1][2] << " " << std::endl;
-    std::cout << "  -----------" << std::endl;
-    std::cout << "1  " << boardPos[0][0] << " | " << boardPos[0][1] << " | " << boardPos[0][2] << " " << std::endl;
-    std::cout << "   a   b   c " << std::endl;
+    for(int i = length - 1; i >= 0; i--)
+    {
+        std::cout.width(4 * (length + 1) - 1);
+        std::cout.fill('-');
+        std::cout << std::left << "  " << std::endl;
+        std::cout << i + 1 << " |";
+        for(int j = 0; j < length; j++)
+        {
+            std::cout << " " << boardPos[i][j] << " |";
+        }
+        std::cout << std::endl;
+    }
+    std::cout.width(4 * (length + 1) - 1);
+    std::cout.fill('-');
+    std::cout << std::left << "  " << std::endl;
+    std::cout << "   ";
+    for(int j = 0; j < length; j++)
+    {
+        std::cout << " " << (char) ('a' + j) << "  ";
+    }
+    std::cout << std::endl;
 }
 
 int Board::makeMove(const Move &move)
@@ -114,7 +133,7 @@ int Board::makeMove(const Move &move)
 
     int counter = 0;
 
-    if(0 > row || 2 < row || 0 > column || 2 < column)
+    if(0 > row || length <= row || 0 > column || length <= column)
     {
         return E_OUT_OF_BOUNDS;
     }
@@ -132,14 +151,14 @@ int Board::makeMove(const Move &move)
      */
 
     // Checking column
-    for(size_t i = 0; i < 3; i++)
+    for(int i = 0; i < length; i++)
     {
         if(boardPos[i][column] == boardPos[row][column])
         {
             counter++;
         }
     }
-    if(3 == counter)
+    if(length == counter)
     {
         return E_WIN;
     }
@@ -147,54 +166,57 @@ int Board::makeMove(const Move &move)
     counter = 0;
 
     // Checking row
-    for(size_t j = 0; j < 3; j++)
+    for(int j = 0; j < length; j++)
     {
         if(boardPos[row][j] == boardPos[row][column])
         {
             counter++;
         }
     }
-    if(3 == counter)
+    if(length == counter)
     {
         return E_WIN;
     }
 
     // Checking diagonals
-    if((row + column) % 2 == 0 && boardPos[row][column] == boardPos[1][1])
+    if(row == column)
     {
         counter = 0;
 
-        for(size_t i = 0; i < 3; i+=2)
+        for(int i = 0; i < length; i++)
         {
-            if(boardPos[i][i] == boardPos[1][1])
+            if(boardPos[i][i] == boardPos[row][column])
             {
                 counter++;
             }
         }
-        if(2 == counter)
+        if(length == counter)
         {
             return E_WIN;
         }
 
+    }
+    else if(row + column == length - 1)
+    {
         counter = 0;
 
-        for(size_t i = 0; i < 3; i+=2)
+        for(int i = 0; i < length; i++)
         {
-            if(boardPos[i][2 - i] == boardPos[1][1])
+            if(boardPos[i][length - 1 - i] == boardPos[row][column])
             {
                 counter++;
             }
         }
-        if(2 == counter)
+        if(length == counter)
         {
             return E_WIN;
         }
     }
 
     // Checking for tie
-    for(size_t i = 0; i < 3; i++)
+    for(int i = 0; i < length; i++)
     {
-        for(size_t j = 0; j < 3; j++)
+        for(int j = 0; j < length; j++)
         {
             if(' ' == boardPos[i][j])
             {
@@ -211,7 +233,7 @@ int Board::unmakeMove(const Move &move)
     int row = move.i;
     int column = move.j;
 
-    if(0 > row || 2 < row || 0 > column || 2 < column)
+    if(0 > row || length - 1 < row || 0 > column || length - 1 < column)
     {
         return E_OUT_OF_BOUNDS;
     }
@@ -226,9 +248,9 @@ std::vector<Move> Board::getMoves()
 {
     moves.clear();
 
-    for(size_t i = 0; i < 3; i++)
+    for(int i = 0; i < length; i++)
     {
-        for(size_t j = 0; j < 3; j++)
+        for(int j = 0; j < length; j++)
         {
             if(' ' == boardPos[i][j])
             {
@@ -243,19 +265,34 @@ std::vector<Move> Board::getMoves()
 Engine::Engine()
 {
     srand(time(NULL));
-    difficulty = rand() % 2;
+    difficulty = 0;
+    /**
+     * 4x4 boards have O(10^13) different positions.
+     */
+    if(4 > BOARD_LENGTH)
+    {
+        difficulty = rand() % 2;
+    }
+
+    if(difficulty)
+    {
+        std::cout << "Difficult" << std::endl;
+    }
 }
 
 Move Engine::chooseMove(Board board)
 {
     std::vector<Move> moves = board.getMoves();
     Move chosenMove = moves[rand() % moves.size()];
-    int score = evaluate(board, chosenMove);
 
     if(difficulty)
     {
+        int score = evaluate(board, chosenMove);
+
         for(size_t i = 0; i < moves.size(); i++)
         {
+            std::cout << (char) ('a' + moves[i].j) << 1 + moves[i].i;
+            std::cout << std::endl;
             int curr_score = evaluate(board, moves[i]);
             if(curr_score > score)
             {
@@ -317,13 +354,13 @@ int main(int argc, char** argv)
         if(board.player == computer)
         {
             Move computer_move;
+            std::cout << "Computer's move: " << std::endl;
             do
             {
                 computer_move = engine.chooseMove(board);
                 state = board.makeMove(computer_move);
             } while(E_TIE > state); // REF_less_than_tie: This is why.
             // The computer should not choose an invalid move, but just in case.
-            std::cout << "Computer's move: " << std::endl;
             std::cout << (char) ('a' + computer_move.j) << 1 + computer_move.i;
             std::cout << std::endl;
         }
@@ -338,26 +375,15 @@ int main(int argc, char** argv)
 
             for(size_t i = 0; i < 2; i++)
             {
-                switch(currentMove[i])
+                if('a' <= currentMove[i] &&
+                    'a' + board.length > currentMove[i])
                 {
-                    case 'a':
-                        column = 0;
-                        break;
-                    case 'b':
-                        column = 1;
-                        break;
-                    case 'c':
-                        column = 2;
-                        break;
-                    case '1':
-                        row = 0;
-                        break;
-                    case '2':
-                        row = 1;
-                        break;
-                    case '3':
-                        row = 2;
-                        break;
+                    column = currentMove[i] - 'a';
+                }
+                else if('1' <= currentMove[i] &&
+                    '1' + board.length > currentMove[i])
+                {
+                    row = currentMove[i] - '1';
                 }
             }
 
