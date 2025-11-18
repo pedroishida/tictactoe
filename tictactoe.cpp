@@ -291,8 +291,6 @@ Move Engine::chooseMove(Board board)
 
         for(size_t i = 0; i < moves.size(); i++)
         {
-            std::cout << (char) ('a' + moves[i].j) << 1 + moves[i].i;
-            std::cout << std::endl;
             int curr_score = evaluate(board, moves[i]);
             if(curr_score > score)
             {
