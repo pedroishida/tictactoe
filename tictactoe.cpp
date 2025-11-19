@@ -13,7 +13,10 @@
 #define E_OCCUPIED_TILE -2
 #define E_OUT_OF_BOUNDS -3
 
+// Complexity increases exponentialy with board length!
+// But it decreases with each play.
 #define BOARD_LENGTH 3
+#define ENGINE_DEPTH 24 / BOARD_LENGTH + 1
 
 class Move
 {
@@ -28,10 +31,10 @@ class Board
 {
     private:
         char boardPos[BOARD_LENGTH][BOARD_LENGTH];
-        const char pieces[2] = {'X', 'O'};
         std::vector<Move> moves;
 
     public:
+        const char pieces[2] = {'X', 'O'};
         int player;
         int length;
         void print();
@@ -50,7 +53,7 @@ class Engine
 {
     private:
         int difficulty;
-        int evaluate(Board &, Move &);
+        int evaluate(Board &, Move &, int);
 
     public:
         Move chooseMove(Board);
@@ -265,33 +268,36 @@ std::vector<Move> Board::getMoves()
 Engine::Engine()
 {
     srand(time(NULL));
-    difficulty = 0;
-    /**
-     * 4x4 boards have O(10^13) different positions.
-     */
-    if(4 > BOARD_LENGTH)
-    {
-        difficulty = rand() % 2;
-    }
+    difficulty = rand() % 2;
 
     if(difficulty)
     {
-        std::cout << "Difficult" << std::endl;
+        std::cout << "Depth = " << ENGINE_DEPTH << std::endl;
+
     }
 }
 
 Move Engine::chooseMove(Board board)
 {
+    int depth = ENGINE_DEPTH - 1;
     std::vector<Move> moves = board.getMoves();
     Move chosenMove = moves[rand() % moves.size()];
 
+    if(9 > moves.size())
+    {
+        depth = moves.size() - 1;
+    }
+
     if(difficulty)
     {
-        int score = evaluate(board, chosenMove);
+        int score = evaluate(board, chosenMove, depth);
 
         for(size_t i = 0; i < moves.size(); i++)
         {
-            int curr_score = evaluate(board, moves[i]);
+            int curr_score = evaluate(board, moves[i], depth);
+            std::cout << (char) ('a' + moves[i].j) << 1 + moves[i].i;
+            std::cout << "\b\b";
+            std::cout.flush();
             if(curr_score > score)
             {
                 score = curr_score;
@@ -303,26 +309,38 @@ Move Engine::chooseMove(Board board)
     return chosenMove;
 }
 
-int Engine::evaluate(Board &board, Move &move)
+int Engine::evaluate(Board &board, Move &move, int depth)
 {
     int board_score = board.makeMove(move);
+
     if(-1 == board_score)
     {
         board_score = 0;
     }
     else if(0 == board_score)
     {
-        std::vector<Move> moves = board.getMoves();
-        int score = evaluate(board, moves[rand() % moves.size()]);
-        for(size_t i = 0; i < moves.size(); i++)
+        if(1 > depth)
         {
-            int curr_score = evaluate(board, moves[i]);
-            if(curr_score > score)
-            {
-                score = curr_score;
-            }
+            board_score = 0;
         }
-        board_score = - score;
+        else
+        {
+            std::vector<Move> moves = board.getMoves();
+            int score = evaluate(
+                board,
+                moves[rand() % moves.size()],
+                depth - 1
+            );
+            for(size_t i = 0; i < moves.size(); i++)
+            {
+                int curr_score = evaluate(board, moves[i], depth - 1);
+                if(curr_score > score)
+                {
+                    score = curr_score;
+                }
+            }
+            board_score = - score;
+        }
     }
 
     board.unmakeMove(move);
@@ -352,7 +370,8 @@ int main(int argc, char** argv)
         if(board.player == computer)
         {
             Move computer_move;
-            std::cout << "Computer's move: " << std::endl;
+            std::cout << "Computer's move (";
+            std::cout << board.pieces[board.player] << "):" << std::endl;
             do
             {
                 computer_move = engine.chooseMove(board);
@@ -364,7 +383,8 @@ int main(int argc, char** argv)
         }
         else if(board.player == player)
         {
-            std::cout << "Your move:" << std::endl;
+            std::cout << "Your move (";
+            std::cout << board.pieces[board.player] << "):" << std::endl;
             if(!(std::cin >> currentMove))
             {
                 std::cerr << "Error: Unable to read move." << std::endl;
